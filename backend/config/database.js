@@ -9,10 +9,11 @@ const connectDatabase = () => {
     })
     .then((data) => {
       console.log(`mongDB has been connected with :${data.connection.name}`);
-    })
-    .catch((err) => {
-      console.log(err);
     });
+
+  // .catch((err) => {
+  //   console.log(err);
+  // }); // removed because this error is handle in server.js unhandled Promise Rejection
 };
 
 module.exports = connectDatabase;

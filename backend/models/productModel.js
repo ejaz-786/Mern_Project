@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+// const autoincreament = require("mongoose-auto-increment");
 
 const productSchema = new mongoose.Schema({
   name: {
@@ -10,7 +11,7 @@ const productSchema = new mongoose.Schema({
     required: [true, "Please Enter product description"],
   },
   price: {
-    type: Number,
+    type: String,
     required: [true, "Please Enter  product Price"],
     maxLength: [8, "Price can not be exceeded more than 8 char"],
   },
@@ -66,5 +67,8 @@ const productSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// autoincreament.initialize(mongoose.connection);
+// productSchema.plugin(autoincreament.plugin, "Product");
 
 module.exports = mongoose.model("Product", productSchema);
