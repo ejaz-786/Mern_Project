@@ -14,7 +14,6 @@ class ApiFeatures {
           },
         }
       : {};
-
     this.query = this.query.find({ ...keyword });
     return this;
   }
@@ -29,12 +28,26 @@ class ApiFeatures {
 
     removeFeilds.forEach((key) => delete queryCopy[key]);
 
-    // Filter for price range and rating:-
+    // Filter for price range:-
     let querystr = JSON.stringify(queryCopy);
     querystr = querystr.replace(/\b(gt|gte|lt|lte)\b/g, (key) => `$${key}`);
-    console.log("check:", JSON.parse(querystr));
-    // this.query = this.query.find(queryCopy);
-    this.query = this.query.find(JSON.parse(querystr));
+    const newqueryCopy = JSON.parse(querystr, (_, value) =>
+      !isNaN(value) ? Number(value) : value
+    );
+    this.query = this.query.find(newqueryCopy);
+    return this;
+  }
+
+  // Pagination Feature
+
+  pagination(resultPerPage) {
+    //logic:-
+    // 50 => 10  skip => 10 * (crntpage - 1 ) ==> 10 * (3-1)
+
+    const currentPage = Number(this.queryStr.page) || 1;
+    const skip = resultPerPage * (currentPage - 1);
+
+    this.query = this.query.limit(resultPerPage).skip(skip);
     return this;
   }
 }

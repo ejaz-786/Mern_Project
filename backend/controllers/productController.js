@@ -5,9 +5,11 @@ const ApiFeatures = require("../utils/apiFeatures");
 
 /**
  * create a product
+ * @param Admin can only access
  */
 
 exports.createProduct = catchAsyncHandler(async (req, res, next) => {
+  req.body.user_id = req.user._id;
   const product = await Product.create(req.body);
   res.status(200).json({
     success: true,
@@ -21,21 +23,23 @@ exports.createProduct = catchAsyncHandler(async (req, res, next) => {
  */
 
 exports.getAllProducts = catchAsyncHandler(async (req, res, next) => {
+  const resultPerPage = 5;
+  const totalCount = await Product.countDocuments();
+
   const apiFeature = new ApiFeatures(Product.find(), req.query)
     .search()
-    .filter();
+    .filter()
+    .pagination(resultPerPage);
   // const products = await Product.find();
   const products = await apiFeature.query;
   if (!products) {
     return next(new ErrorHandler("Product not found", 400));
-    // res.status(500).json({
-    //   success: false,
-    //   message: "Product not found",
-    // });
   }
   res.status(200).json({
     success: true,
     message: "fetched all data..",
+    totalCount,
+    currentCount: products.length,
     data: products,
   });
 });
@@ -48,10 +52,6 @@ exports.getProduct = catchAsyncHandler(async (req, res, next) => {
   const products = await Product.findById(req.params.id);
   if (!products) {
     return next(new ErrorHandler("Product Not found", 400));
-    // res.status(500).json({
-    //   success: false,
-    //   message: "Product not Found",
-    // });
   }
   res.status(200).json({
     success: true,
@@ -69,10 +69,6 @@ exports.updateProduct = catchAsyncHandler(async (req, res, next) => {
   let products = await Product.findById(req.params.id);
   if (!products) {
     return next(new ErrorHandler("Product not found", 400));
-    // return res.status(500).json({
-    //   success: false,
-    //   message: "No products found",
-    // });
   }
   products = await Product.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
