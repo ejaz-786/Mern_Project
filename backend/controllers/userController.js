@@ -6,7 +6,6 @@ const sendEmail = require("../utils/sendEmail.js");
 const crypto = require("crypto");
 
 // 1. REGISTER A USER :-
-
 exports.registerUser = catchAysncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
@@ -26,7 +25,6 @@ exports.registerUser = catchAysncHandler(async (req, res, next) => {
 });
 
 // 2. LOGIN A USER
-
 exports.loginUser = catchAysncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -41,7 +39,7 @@ exports.loginUser = catchAysncHandler(async (req, res, next) => {
     return next(new ErrorHandler("Invalid email or password", 401));
   }
 
-  const isPasswordMatched = user.comparePassword(password);
+  const isPasswordMatched = await user.comparePassword(password);
   if (!isPasswordMatched) {
     return next(new ErrorHandler("Invalid email or password ", 401));
   }
@@ -50,7 +48,6 @@ exports.loginUser = catchAysncHandler(async (req, res, next) => {
 });
 
 // 3. LOGOUT A USER :-
-
 exports.logoutUser = catchAysncHandler(async (req, res, next) => {
   res.cookie("token", null, {
     expires: new Date(Date.now()),
@@ -63,7 +60,6 @@ exports.logoutUser = catchAysncHandler(async (req, res, next) => {
 });
 
 // 4. FORGOT A PASSWORD
-
 exports.forgotPassword = catchAysncHandler(async (req, res, next) => {
   const { email } = req.body;
   const user = await User.findOne({ email: email });
@@ -101,13 +97,11 @@ exports.forgotPassword = catchAysncHandler(async (req, res, next) => {
 });
 
 //5.  RESET A PASSWORD :-
-
 exports.resetPassword = catchAysncHandler(async (req, res, next) => {
   const resetPasswordToken = crypto
     .createHash("sha256")
     .update(req.params.token)
     .digest("hex");
-  console.log("tokenss:==>", resetPasswordToken);
   const user = await User.findOne({
     resetPasswordToken,
     resetPasswordExpire: { $gt: Date.now() },
@@ -131,6 +125,139 @@ exports.resetPassword = catchAysncHandler(async (req, res, next) => {
   sendToken(user, 200, res, `Password has been updated successfully..`);
 });
 
-// 6. GET USER DETAIL:-
+// 6. GET SELF USER DETAIL:-
+exports.getUserDetails = catchAysncHandler(async (req, res, next) => {
+  const user = User.findOne(req.user.id);
 
-//
+  res.status(200).json({
+    success: true,
+    message: "fetched user details successfully....",
+    user,
+  });
+});
+
+// 7. UPDATE/CHANGE A PASSWORD :-
+exports.updatePassword = catchAysncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("+password");
+  const isPasswordMatched = await user.comparePassword(req.body.old_password);
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler(`Old password is incorrect `, 400));
+  }
+
+  if (req.body.new_password !== req.body.confirm_password) {
+    return next(new ErrorHandler(`Password doesn't match , try again `, 400));
+  }
+
+  user.password = req.body.new_password;
+
+  await user.save();
+  const message = `Password updated successfully ...`;
+  sendToken(user, 200, res, message);
+});
+
+// 8. UPDATE SELF USER PROFILE
+exports.updateUserProfile = catchAysncHandler(async (req, res, next) => {
+  const { email, name } = req.body;
+
+  const newUserData = { email, name };
+
+  const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: true,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "User profile updated successfully....",
+    user,
+  });
+});
+
+// 9. GET ALL USER --(ADMIN)
+exports.getAllUser = catchAysncHandler(async (req, res, next) => {
+  const user = await User.find();
+
+  res.status(200).json({
+    success: true,
+    message: "details of all user..",
+    user,
+  });
+});
+
+// 10. GET SINGLE USER ---- (ADMIN)
+exports.getSingleUser = catchAysncHandler(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return next(
+      new ErrorHandler(`User not Found by this id:${req.params.id}`, 400)
+    );
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "User detail fetched successfully....",
+    user,
+  });
+});
+
+//11. UPDATE SELF ROLE:-  ****
+exports.updateSelfRole = catchAysncHandler(async (req, res, next) => {
+  const { role } = req.body;
+  const newRole = { role };
+
+  const user = await User.findByIdAndUpdate(req.user.id, newRole, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: true,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Updated Role Successfully...",
+    user,
+  });
+});
+
+// 12. UPDATE OTHER'S ROLE ---( ADMIN )
+exports.updateOtherRoles = catchAysncHandler(async (req, res, next) => {
+  const { role } = req.body;
+
+  const newRole = { role };
+
+  const user = await User.findByIdAndUpdate(req.params.id, newRole, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: true,
+  });
+
+  if (!user) {
+    return next(new ErrorHandler(`User not Found..`, 400));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Role updated successfully...",
+    user,
+  });
+});
+
+// 13. DELETE USER --- ( ADMIN ) :-
+exports.deleteUser = catchAysncHandler(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return next(
+      new ErrorHandler(`User not Found by this id:${req.params.id}`, 400)
+    );
+  }
+
+  // delete user-
+  await user.deleteOne({ _id: req.params.id });
+  res.status(200).json({
+    success: true,
+    message: `User deleted successfully...`,
+    user,
+  });
+});

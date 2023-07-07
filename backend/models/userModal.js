@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema({
 // 2. BEFORE SAVE ENCRYPT PASSWORD:-
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    next();
+    return next();
   }
 
   this.password = await bcrypt.hash(this.password, 10);
@@ -61,8 +61,9 @@ userSchema.methods.getJWTToken = function () {
 
 // COMPARE PASSWORD
 
-userSchema.methods.comparePassword = function async(password) {
-  return bcrypt.compare(password, this.password);
+userSchema.methods.comparePassword = async function (password) {
+  const match = await bcrypt.compare(password, this.password);
+  return match;
 };
 
 // GENERATING PASSWORD RESET TOKEN:-

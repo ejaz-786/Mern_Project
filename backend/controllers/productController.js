@@ -3,7 +3,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const catchAsyncHandler = require("../midddleware/catchAysncHandler");
 const ApiFeatures = require("../utils/apiFeatures");
 
-/**
+/** 1.
  * create a product
  * @param Admin can only access
  */
@@ -18,7 +18,7 @@ exports.createProduct = catchAsyncHandler(async (req, res, next) => {
   });
 });
 
-/**
+/** 2.
  * get All Products
  */
 
@@ -44,7 +44,7 @@ exports.getAllProducts = catchAsyncHandler(async (req, res, next) => {
   });
 });
 
-/**
+/** 3.
  * get single product by id
  */
 
@@ -60,7 +60,7 @@ exports.getProduct = catchAsyncHandler(async (req, res, next) => {
   });
 });
 
-/**
+/** 4.
  * update product by id
  * @param Admin can only access
  */
@@ -82,7 +82,7 @@ exports.updateProduct = catchAsyncHandler(async (req, res, next) => {
   });
 });
 
-/**
+/**  5.
  * Delete a product
  * @param Admin can only delete
  */
@@ -102,3 +102,52 @@ exports.deleteProduct = catchAsyncHandler(async (req, res, next) => {
     data: products,
   });
 });
+
+// REVIEWS / RATINGS :-
+
+exports.createAndUpdateProductReview = catchAsyncHandler(
+  async (req, res, next) => {
+    const { rating, comment, productId } = req.body;
+
+    const review = {
+      user_id: req.user.id,
+      name: req.user.name,
+      rating: Number(rating),
+      comment: comment,
+    };
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return next(new ErrorHandler(`Product not Found `, 400));
+    }
+
+    const isReviewed = product.reviews.some(
+      (element) => element.user_id.toString() === review.user_id.toString()
+    );
+
+    if (isReviewed) {
+      product.reviews.forEach((element) => {
+        if (element.user_id.toString() === review.user_id)
+          (element.rating = rating), (element.comment = comment);
+      });
+    } else {
+      product.reviews.push(review);
+      product.noOfReviews = product.reviews.length;
+    }
+    product.ratings =
+      product.reviews.reduce((acc, ele) => (acc += ele.rating), 0) /
+      product.reviews.length;
+
+    await product.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: `${
+        isReviewed
+          ? "Product Edited Successfully.."
+          : "Product created Successfully.."
+      }`,
+      product,
+    });
+  }
+);
