@@ -7,7 +7,7 @@ const crypto = require("crypto");
 
 // 1. REGISTER A USER :-
 exports.registerUser = catchAysncHandler(async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   const user = await User.create({
     name,
@@ -17,6 +17,7 @@ exports.registerUser = catchAysncHandler(async (req, res, next) => {
       public_id: "this is public id",
       url: "this is public url",
     },
+    role: role,
   });
 
   // get Token
